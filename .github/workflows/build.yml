@@ -1,0 +1,57 @@
+name: Build app
+
+on:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.11.1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Refresh the card list
+        # If the site is down, the copy already in the repo is used.
+        continue-on-error: true
+        run: node tools/update-cards.js
+
+      - name: Run tests
+        run: gradle --no-daemon testReleaseUnitTest
+
+      - name: Build the app
+        run: gradle --no-daemon assembleRelease
+
+      - name: Name the app file
+        run: cp app/build/outputs/apk/release/app-release.apk SnapOverlay.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SnapOverlay
+          path: SnapOverlay.apk
+
+      - name: Publish as the "latest" download
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION=$(grep -oP 'versionName = "\K[^"]+' app/build.gradle.kts)
+          gh release delete latest --yes --cleanup-tag || true
+          gh release create latest SnapOverlay.apk \
+            --title "Snap Overlay $VERSION" \
+            --notes "Built from branch ${{ github.ref_name }}, commit ${{ github.sha }}. On your phone, tap SnapOverlay.apk below to download it, then open it to install." \
+            --target "${{ github.sha }}"
