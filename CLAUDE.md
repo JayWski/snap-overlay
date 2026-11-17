@@ -17,5 +17,8 @@
   "CardDefId". See `DeckCode.kt`; the owner's real decks are in `DeckCodeTest.kt`.
 - Card data: marvelsnapzone.com `getinfo/?searchtype=cards&searchcardstype=true` → `success.cards[]`
   with `carddefid`, `name`, `cost`, `power`, `status`. Slimmed into `app/src/main/assets/cards.json`.
-- Ideas not built yet: automatic deck/result detection from the screen.
+- On hold (owner's call): automatic tracking by reading the game's files on the phone, the way
+  Untapped.gg's Android tracker does (folder access to the game's data folder; blocked on many newer
+  Android versions). Next step if resumed: ask phone model/Android version, then a test build with a
+  "Connect game folder" button that lists the files found. Screen watching is the other option.
 - Keep `README.md` up to date when features change.
