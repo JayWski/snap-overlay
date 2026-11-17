@@ -49,6 +49,8 @@ class OverlayService : Service() {
         private const val CHANNEL = "overlay"
         private const val POS_PREFS = "overlay_position"
         private const val DECK_SIZE = 12
+        /** How see-through the S is when not touched (0 = invisible, 1 = solid). */
+        private const val IDLE_ALPHA = 0.45f
 
         /** Starts the overlay, or opens its panel if it's already running. */
         fun open(context: Context) {
@@ -162,8 +164,7 @@ class OverlayService : Service() {
         bubble = Ui.text(this, "S", 23f, Color.WHITE, bold = true).apply {
             gravity = Gravity.CENTER
             background = Ui.oval(Ui.PURPLE)
-            alpha = 0.92f
-            elevation = Ui.dp(context, 6).toFloat()
+            alpha = IDLE_ALPHA
         }
         val pos = getSharedPreferences(POS_PREFS, MODE_PRIVATE)
         bubbleParams = overlayParams(size, size).apply {
@@ -177,6 +178,7 @@ class OverlayService : Service() {
         bubble.setOnTouchListener { _, e ->
             when (e.actionMasked) {
                 MotionEvent.ACTION_DOWN -> {
+                    bubble.alpha = 1f
                     startX = bubbleParams.x; startY = bubbleParams.y
                     touchX = e.rawX; touchY = e.rawY; dragging = false
                 }
@@ -193,6 +195,7 @@ class OverlayService : Service() {
                     }
                 }
                 MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                    bubble.alpha = IDLE_ALPHA
                     if (dragging) {
                         val drop = e.actionMasked == MotionEvent.ACTION_UP && overCloseTarget(e.rawX, e.rawY)
                         hideCloseTarget()
