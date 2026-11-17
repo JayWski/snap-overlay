@@ -9,8 +9,9 @@ purple **S** button appears over the game. Tap the **S** to open the panel.
   Code** in the game) or **Pick cards** (search and tap 12 cards; the app makes the deck code).
   Pick the deck's name and folder, then **Save deck**.
 - **Decks.** Each deck shows its win/loss record. Inside a deck: **Won** / **Lost** after each
-  match (with **Undo**), the 12 cards with cost and power (tap one when you draw it to grey it out),
-  **Reset cards**, **Copy code**, **Rename**, **Move** (to another folder) and **Delete**.
+  match (with **Undo**), all 12 cards in two columns with cost and power, no scrolling (tap one when
+  you draw it to grey it out), **Reset**, **Copy code**, and under **More**: **Rename**, **Move**
+  (to another folder) and **Delete**.
 - **Closing.** **Quit** at the top of the panel, or drag the **S** onto the **✕** that appears at
   the bottom of the screen. **✕** in the panel just hides the panel.
 - **Card list** updates by itself each time the overlay starts.

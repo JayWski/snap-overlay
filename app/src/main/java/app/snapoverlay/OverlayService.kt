@@ -92,6 +92,8 @@ class OverlayService : Service() {
     /** Cards chosen in the card picker. */
     private val picked = mutableListOf<CardInfo>()
     private var pickQuery = ""
+    /** Deck screen: showing Rename / Move / Delete. */
+    private var deckMore = false
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -272,7 +274,7 @@ class OverlayService : Service() {
     private fun openPanel() {
         if (panel == null) {
             val metrics = resources.displayMetrics
-            val width = minOf(metrics.widthPixels - Ui.dp(this, 24), Ui.dp(this, 380))
+            val width = minOf(metrics.widthPixels - Ui.dp(this, 24), Ui.dp(this, 320))
             val params = overlayParams(width, WindowManager.LayoutParams.WRAP_CONTENT).apply {
                 gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
                 y = Ui.dp(this@OverlayService, 36)
@@ -297,12 +299,14 @@ class OverlayService : Service() {
 
     private fun go(screen: Screen) {
         confirmDelete = null
+        deckMore = false
         stack.add(screen)
         render()
     }
 
     private fun back() {
         confirmDelete = null
+        deckMore = false
         if (stack.size > 1) {
             stack.removeAt(stack.size - 1)
             render()
@@ -354,9 +358,9 @@ class OverlayService : Service() {
         }
 
         val box = Ui.vertical(this).apply {
-            val p = Ui.dp(context, 12)
+            val p = Ui.dp(context, 8)
             setPadding(p, p, p, p)
-            background = Ui.rounded(Ui.PANEL_BG, Ui.dp(context, 16).toFloat())
+            background = Ui.rounded(Ui.PANEL_BG, Ui.dp(context, 14).toFloat())
         }
         box.addView(header(titleOf(screen), showBack = stack.size > 1))
         val body = Ui.vertical(this)
@@ -396,37 +400,37 @@ class OverlayService : Service() {
     /** Top row on every screen: back, title, + (new deck), Quit, close. */
     private fun header(title: String, showBack: Boolean): View {
         val row = Ui.horizontal(this)
-        if (showBack) row.addView(Ui.button(this, "←", sizeSp = 17f) { back() })
-        row.addView(Ui.text(this, title, 18f, Color.WHITE, bold = true).apply {
+        if (showBack) row.addView(Ui.button(this, "←", sizeSp = 14f) { back() })
+        row.addView(Ui.text(this, title, 15f, Color.WHITE, bold = true).apply {
             tag = "title"
             layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply {
-                marginStart = Ui.dp(context, 8); marginEnd = Ui.dp(context, 6)
+                marginStart = Ui.dp(context, 6); marginEnd = Ui.dp(context, 4)
             }
             maxLines = 1
             ellipsize = android.text.TextUtils.TruncateAt.END
         })
-        row.addView(Ui.button(this, "+", Ui.PURPLE, sizeSp = 20f) {
+        row.addView(Ui.button(this, "+", Ui.PURPLE, sizeSp = 16f) {
             if (stack.last() !is Screen.Create) go(Screen.Create(currentFolderId()))
-        }.apply { setPadding(Ui.dp(context, 16), Ui.dp(context, 4), Ui.dp(context, 16), Ui.dp(context, 4)) })
-        row.addView(Ui.spacer(this, 1).apply { layoutParams = LinearLayout.LayoutParams(Ui.dp(context, 6), 1) })
-        row.addView(Ui.button(this, "Quit", Ui.LOSS_RED, sizeSp = 13f) { quit() })
-        row.addView(Ui.spacer(this, 1).apply { layoutParams = LinearLayout.LayoutParams(Ui.dp(context, 6), 1) })
-        row.addView(Ui.button(this, "✕", sizeSp = 15f) { closePanel() })
+        }.apply { setPadding(Ui.dp(context, 12), Ui.dp(context, 2), Ui.dp(context, 12), Ui.dp(context, 2)) })
+        row.addView(Ui.gap(this, 4))
+        row.addView(Ui.button(this, "Quit", Ui.LOSS_RED, sizeSp = 11f) { quit() })
+        row.addView(Ui.gap(this, 4))
+        row.addView(Ui.button(this, "✕", sizeSp = 12f) { closePanel() })
         return row
     }
 
-    private fun scrolling(content: View, share: Double = 0.55): View =
+    private fun scrolling(content: View, share: Double = 0.4): View =
         MaxHeightScrollView(this, (resources.displayMetrics.heightPixels * share).toInt()).apply {
             layoutParams = Ui.matchWidth(context, 8)
             addView(content)
         }
 
     private fun note(body: LinearLayout, message: String) {
-        body.addView(Ui.text(this, message, 13f, Ui.MUTED).apply { layoutParams = Ui.matchWidth(context, 8) })
+        body.addView(Ui.text(this, message, 12f, Ui.MUTED).apply { layoutParams = Ui.matchWidth(context, 6) })
     }
 
     private fun buttonRow(body: LinearLayout, vararg buttons: View) {
-        val row = Ui.horizontal(this).apply { layoutParams = Ui.matchWidth(context, 10) }
+        val row = Ui.horizontal(this).apply { layoutParams = Ui.matchWidth(context, 6) }
         for (b in buttons) {
             b.layoutParams = Ui.weighted(this)
             row.addView(b)
@@ -516,20 +520,22 @@ class OverlayService : Service() {
         val marked = drawn.getOrPut(deckId) { mutableSetOf() }
         val cards = DeckStore.cards(this, deck)
 
-        // Record and the one-tap result buttons.
-        body.addView(Ui.text(this, "Record: ${deck.record}", 15f, Color.WHITE, bold = true).apply {
-            layoutParams = Ui.matchWidth(context, 8)
+        // Record plus the one-tap result buttons, on one line.
+        val top = Ui.horizontal(this).apply { layoutParams = Ui.matchWidth(context, 6) }
+        top.addView(Ui.text(this, deck.record, 13f, Color.WHITE, bold = true).apply {
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
         })
-        buttonRow(body,
-            Ui.button(this, "Won", Ui.WIN_GREEN) { recordResult(deck, won = true) },
-            Ui.button(this, "Lost", Ui.LOSS_RED) { recordResult(deck, won = false) })
+        top.addView(Ui.button(this, "Won", Ui.WIN_GREEN, sizeSp = 12f) { recordResult(deck, won = true) })
+        top.addView(Ui.gap(this, 6))
+        top.addView(Ui.button(this, "Lost", Ui.LOSS_RED, sizeSp = 12f) { recordResult(deck, won = false) })
+        body.addView(top)
         val last = lastResult
         if (last != null && last.first == deckId) {
-            val row = Ui.horizontal(this).apply { layoutParams = Ui.matchWidth(context, 6) }
-            row.addView(Ui.text(this, if (last.second) "Win recorded." else "Loss recorded.", 13f, Ui.MUTED).apply {
+            val row = Ui.horizontal(this).apply { layoutParams = Ui.matchWidth(context, 4) }
+            row.addView(Ui.text(this, if (last.second) "Win recorded." else "Loss recorded.", 11f, Ui.MUTED).apply {
                 layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
             })
-            row.addView(Ui.button(this, "Undo", sizeSp = 13f) {
+            row.addView(Ui.button(this, "Undo", sizeSp = 11f) {
                 DeckStore.updateDeck(this, deckId) {
                     if (last.second) it.copy(wins = maxOf(0, it.wins - 1)) else it.copy(losses = maxOf(0, it.losses - 1))
                 }
@@ -539,47 +545,54 @@ class OverlayService : Service() {
             body.addView(row)
         }
 
-        // The cards. Tap one when you draw it.
-        val left = Ui.text(this, "", 13f, Ui.MUTED)
+        // All 12 cards in two columns, no scrolling. Tap one when you draw it.
+        val left = Ui.text(this, "", 11f, Ui.MUTED).apply { layoutParams = Ui.matchWidth(context, 6) }
         fun updateLeft() {
             val n = cards.count { it.key !in marked }
-            left.text = if (n == 0) "Deck empty." else "Tap a card when you draw it · $n left · each 1 in $n next draw"
+            left.text = if (n == 0) "Deck empty." else "Tap cards you draw · $n left · 1 in $n each"
         }
-        left.layoutParams = Ui.matchWidth(this, 10)
         body.addView(left)
-        val list = Ui.vertical(this)
-        for (card in cards) {
-            val row = Ui.cardRow(this, card, drawn = card.key in marked)
-            row.setOnClickListener {
-                if (!marked.remove(card.key)) marked.add(card.key)
-                Ui.setDrawn(row, card.key in marked)
-                updateLeft()
+        for (pair in cards.chunked(2)) {
+            val row = Ui.horizontal(this).apply { layoutParams = Ui.matchWidth(context, 3) }
+            for (card in pair) {
+                val cell = Ui.cardCell(this, card, drawn = card.key in marked)
+                cell.layoutParams = Ui.weighted(this, 2)
+                cell.setOnClickListener {
+                    if (!marked.remove(card.key)) marked.add(card.key)
+                    Ui.setDrawn(cell, card.key in marked)
+                    updateLeft()
+                }
+                row.addView(cell)
             }
-            list.addView(row)
+            if (pair.size == 1) row.addView(View(this).apply { layoutParams = Ui.weighted(context, 2) })
+            body.addView(row)
         }
-        body.addView(scrolling(list, 0.45))
         updateLeft()
 
-        // Deck actions.
+        // Deck actions: the common ones, then the rest behind More.
         buttonRow(body,
-            Ui.button(this, "Reset cards", sizeSp = 13f) { marked.clear(); render() },
-            Ui.button(this, "Copy code", sizeSp = 13f) { copyDeck(deck) })
-        val delKey = "deck:$deckId"
-        buttonRow(body,
-            Ui.button(this, "Rename", sizeSp = 13f) { go(Screen.RenameDeck(deckId)) },
-            Ui.button(this, "Move", sizeSp = 13f) { go(Screen.MoveDeck(deckId)) },
-            Ui.button(this, if (confirmDelete == delKey) "Sure?" else "Delete", Ui.LOSS_RED, sizeSp = 13f) {
-                if (confirmDelete == delKey) {
-                    DeckStore.deleteDeck(this, deckId)
-                    drawn.remove(deckId)
-                    confirmDelete = null
-                    stack.removeAt(stack.size - 1)
-                    render()
-                } else {
-                    confirmDelete = delKey
-                    render()
-                }
-            })
+            Ui.button(this, "Reset", sizeSp = 12f) { marked.clear(); render() },
+            Ui.button(this, "Copy code", sizeSp = 12f) { copyDeck(deck) },
+            Ui.button(this, if (deckMore) "Less" else "More", sizeSp = 12f) { deckMore = !deckMore; render() })
+        if (deckMore) {
+            val delKey = "deck:$deckId"
+            buttonRow(body,
+                Ui.button(this, "Rename", sizeSp = 12f) { go(Screen.RenameDeck(deckId)) },
+                Ui.button(this, "Move", sizeSp = 12f) { go(Screen.MoveDeck(deckId)) },
+                Ui.button(this, if (confirmDelete == delKey) "Sure?" else "Delete", Ui.LOSS_RED, sizeSp = 12f) {
+                    if (confirmDelete == delKey) {
+                        DeckStore.deleteDeck(this, deckId)
+                        drawn.remove(deckId)
+                        confirmDelete = null
+                        deckMore = false
+                        stack.removeAt(stack.size - 1)
+                        render()
+                    } else {
+                        confirmDelete = delKey
+                        render()
+                    }
+                })
+        }
     }
 
     private fun recordResult(deck: Deck, won: Boolean) {
@@ -733,9 +746,9 @@ class OverlayService : Service() {
         })
 
         body.addView(Ui.text(this, "Your deck", 13f, Ui.MUTED, bold = true).apply { layoutParams = Ui.matchWidth(context, 8) })
-        body.addView(scrolling(chosenList, 0.22))
+        body.addView(scrolling(chosenList, 0.18))
         body.addView(Ui.text(this, "All cards", 13f, Ui.MUTED, bold = true).apply { layoutParams = Ui.matchWidth(context, 8) })
-        body.addView(scrolling(results, 0.3))
+        body.addView(scrolling(results, 0.25))
         buttonRow(body, next)
         refresh()
     }

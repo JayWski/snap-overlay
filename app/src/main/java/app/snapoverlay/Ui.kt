@@ -60,11 +60,11 @@ object Ui {
             .apply { marginStart = dp(context, marginDp); marginEnd = dp(context, marginDp) }
 
     /** A flat rounded button. */
-    fun button(context: Context, label: String, color: Int = BUTTON_BG, sizeSp: Float = 15f, onClick: () -> Unit): TextView =
+    fun button(context: Context, label: String, color: Int = BUTTON_BG, sizeSp: Float = 13f, onClick: () -> Unit): TextView =
         text(context, label, sizeSp, Color.WHITE, bold = true).apply {
             gravity = Gravity.CENTER
-            background = rounded(color, dp(context, 8).toFloat())
-            val h = dp(context, 12); val v = dp(context, 9)
+            background = rounded(color, dp(context, 7).toFloat())
+            val h = dp(context, 9); val v = dp(context, 6)
             setPadding(h, v, h, v)
             isClickable = true
             setOnClickListener { onClick() }
@@ -73,14 +73,14 @@ object Ui {
     /** A tappable row with a title and a smaller line under it. */
     fun listRow(context: Context, title: String, subtitle: String?, onClick: () -> Unit): LinearLayout =
         vertical(context).apply {
-            background = rounded(ROW_BG, dp(context, 10).toFloat())
-            val p = dp(context, 12)
-            setPadding(p, dp(context, 10), p, dp(context, 10))
-            layoutParams = matchWidth(context)
-            addView(text(context, title, 16f, Color.WHITE, bold = true).apply {
+            background = rounded(ROW_BG, dp(context, 8).toFloat())
+            val p = dp(context, 10)
+            setPadding(p, dp(context, 7), p, dp(context, 7))
+            layoutParams = matchWidth(context, 4)
+            addView(text(context, title, 14f, Color.WHITE, bold = true).apply {
                 maxLines = 1; ellipsize = TextUtils.TruncateAt.END
             })
-            if (subtitle != null) addView(text(context, subtitle, 13f, MUTED).apply {
+            if (subtitle != null) addView(text(context, subtitle, 12f, MUTED).apply {
                 maxLines = 2; ellipsize = TextUtils.TruncateAt.END
             })
             isClickable = true
@@ -91,9 +91,9 @@ object Ui {
         this.hint = hint
         setTextColor(Color.WHITE)
         setHintTextColor(MUTED)
-        setTextSize(TypedValue.COMPLEX_UNIT_SP, 15f)
+        setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
         background = rounded(ROW_BG, dp(context, 8).toFloat())
-        val p = dp(context, 10)
+        val p = dp(context, 8)
         setPadding(p, p, p, p)
         layoutParams = matchWidth(context)
         if (multiLine) {
@@ -107,30 +107,52 @@ object Ui {
         }
     }
 
-    private fun badge(context: Context, value: String, color: Int): TextView =
-        text(context, value, 14f, Color.WHITE, bold = true).apply {
+    private fun badge(context: Context, value: String, color: Int, sizeDp: Int = 22, textSp: Float = 12f): TextView =
+        text(context, value, textSp, Color.WHITE, bold = true).apply {
             gravity = Gravity.CENTER
             background = oval(color)
-            val size = dp(context, 28)
+            val size = dp(context, sizeDp)
             layoutParams = LinearLayout.LayoutParams(size, size)
         }
+
+    /** A small card for the two-column deck grid: cost, name (up to two lines), power. */
+    fun cardCell(context: Context, card: ShownCard, drawn: Boolean): LinearLayout {
+        val cell = horizontal(context).apply {
+            background = rounded(ROW_BG, dp(context, 6).toFloat())
+            val p = dp(context, 3)
+            setPadding(p, p, p, p)
+            minimumHeight = dp(context, 32)
+        }
+        cell.addView(badge(context, card.cost?.toString() ?: "?", COST_BLUE, 19, 11f))
+        cell.addView(text(context, card.name, 11f).apply {
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply {
+                marginStart = dp(context, 4); marginEnd = dp(context, 4)
+            }
+            maxLines = 2
+            ellipsize = TextUtils.TruncateAt.END
+            setLineSpacing(0f, 0.9f)
+        })
+        cell.addView(badge(context, card.power?.toString() ?: "?", POWER_ORANGE, 19, 11f))
+        setDrawn(cell, drawn)
+        return cell
+    }
 
     /** One card line: blue cost circle, name, orange power circle. */
     fun cardRow(context: Context, card: ShownCard, drawn: Boolean = false, trailing: String? = null): LinearLayout {
         val row = horizontal(context).apply {
-            val pad = dp(context, 4)
+            val pad = dp(context, 2)
             setPadding(pad, pad, pad, pad)
         }
         row.addView(badge(context, card.cost?.toString() ?: "?", COST_BLUE))
-        row.addView(text(context, card.name, 15f).apply {
+        row.addView(text(context, card.name, 13f).apply {
             layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply {
-                marginStart = dp(context, 10); marginEnd = dp(context, 10)
+                marginStart = dp(context, 8); marginEnd = dp(context, 8)
             }
             maxLines = 1
             ellipsize = TextUtils.TruncateAt.END
         })
         row.addView(badge(context, card.power?.toString() ?: "?", POWER_ORANGE))
-        if (trailing != null) row.addView(text(context, trailing, 18f, MUTED, bold = true).apply {
+        if (trailing != null) row.addView(text(context, trailing, 15f, MUTED, bold = true).apply {
             setPadding(dp(context, 10), 0, dp(context, 4), 0)
         })
         setDrawn(row, drawn)
@@ -143,6 +165,10 @@ object Ui {
         name.paintFlags = if (drawn) name.paintFlags or Paint.STRIKE_THRU_TEXT_FLAG
         else name.paintFlags and Paint.STRIKE_THRU_TEXT_FLAG.inv()
     }
+
+    /** Empty space between items in a row. */
+    fun gap(context: Context, widthDp: Int): View =
+        View(context).apply { layoutParams = LinearLayout.LayoutParams(dp(context, widthDp), 1) }
 
     fun spacer(context: Context, heightDp: Int): View =
         View(context).apply { layoutParams = LinearLayout.LayoutParams(1, dp(context, heightDp)) }
