@@ -75,4 +75,21 @@ class DeckCodeTest {
         }
         assertEquals(6, db.find("Lnclt8")!!.power)
     }
+
+    @Test fun pickedDeckTextReadsBackLikeAGameCode() {
+        val ids = listOf("Arana", "GhostSpider", "IronFist", "Vulture", "MadameWeb", "Dagger", "Sparky",
+            "Kraven", "DoctorStrange", "HumanTorch", "SpiderPunk", "FriendlyNeighborhoodCarnage")
+        val cards = ids.map { id -> db.find(DeckCode.shortKey(id))!! }
+        val text = DeckCode.gameText(cards)
+        val parsed = DeckCode.parse(text)!!
+        assertEquals(DeckCode.parse(spiderDeck)!!.code, parsed.code)
+        assertEquals(12, parsed.cards.count { it.name != null && it.cost != null })
+        org.junit.Assert.assertTrue(text.startsWith("# (1) "))
+    }
+
+    @Test fun releasedCardsAreListedForThePicker() {
+        org.junit.Assert.assertTrue(db.released.size > 300)
+        org.junit.Assert.assertTrue(db.released.any { it.name == "Lancelot" })
+        org.junit.Assert.assertTrue(db.released.none { it.name.contains("Skill 01") })
+    }
 }

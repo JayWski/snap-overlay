@@ -1,22 +1,26 @@
 package app.snapoverlay
 
 import android.content.Context
+import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
 
-data class CardInfo(val id: String, val name: String, val cost: Int, val power: Int)
+data class CardInfo(val id: String, val name: String, val cost: Int, val power: Int, val released: Boolean = true)
 
 /**
  * The card list (name, cost, power). A copy ships inside the app (assets/cards.json).
- * "Update card list" downloads a newer one from marvelsnapzone.com and keeps it in the
- * app's own storage, which is then used instead of the built-in copy.
+ * Each time the overlay starts, a newer list is downloaded from marvelsnapzone.com in the
+ * background and kept in the app's own storage, which is then used instead of the built-in copy.
  */
 class CardDb private constructor(private val byKey: Map<String, CardInfo>, val updated: String) {
 
     fun find(key: String): CardInfo? = byKey[key]
     val size: Int get() = byKey.size
+
+    /** Released cards, A to Z, for the card picker. */
+    val released: List<CardInfo> by lazy { byKey.values.filter { it.released }.sortedBy { it.name.lowercase() } }
 
     companion object {
         const val SOURCE_URL = "https://marvelsnapzone.com/getinfo/?searchtype=cards&searchcardstype=true"
@@ -33,14 +37,17 @@ class CardDb private constructor(private val byKey: Map<String, CardInfo>, val u
             return db
         }
 
-        /** Reads our slim format: {"updated": "...", "cards": [{"id","name","cost","power"}]}. */
+        /** Reads our slim format: {"updated": "...", "cards": [{"id","name","cost","power","released"}]}. */
         fun fromSlimJson(text: String): CardDb {
             val root = JSONObject(text)
             val arr = root.getJSONArray("cards")
             val map = HashMap<String, CardInfo>()
             for (i in 0 until arr.length()) {
                 val c = arr.getJSONObject(i)
-                val info = CardInfo(c.getString("id"), c.getString("name"), c.getInt("cost"), c.getInt("power"))
+                val info = CardInfo(
+                    c.getString("id"), c.getString("name"), c.getInt("cost"), c.getInt("power"),
+                    c.optBoolean("released", true),
+                )
                 map[DeckCode.shortKey(info.id)] = info
             }
             return CardDb(map, root.optString("updated", "?"))
@@ -49,7 +56,7 @@ class CardDb private constructor(private val byKey: Map<String, CardInfo>, val u
         /** Turns the site's full card list into our slim format. */
         fun slimFromSite(text: String, today: String): String {
             val cards = JSONObject(text).getJSONObject("success").getJSONArray("cards")
-            val out = org.json.JSONArray()
+            val out = JSONArray()
             for (i in 0 until cards.length()) {
                 val c = cards.getJSONObject(i)
                 val id = c.optString("carddefid")
@@ -59,6 +66,7 @@ class CardDb private constructor(private val byKey: Map<String, CardInfo>, val u
                     put("name", c.optString("name", id).replace(Regex("<[^>]*>"), ""))
                     put("cost", c.getInt("cost"))
                     put("power", c.getInt("power"))
+                    put("released", c.optString("status") == "released")
                 })
             }
             if (out.length() < 300) throw IllegalStateException("The card list looked too short (${out.length()} cards).")
@@ -83,6 +91,15 @@ class CardDb private constructor(private val byKey: Map<String, CardInfo>, val u
             } finally {
                 conn.disconnect()
             }
+        }
+
+        /** Updates the card list in the background, quietly. [done] runs on that thread afterwards. */
+        fun refreshInBackground(context: Context, done: (Boolean) -> Unit = {}) {
+            val app = context.applicationContext
+            Thread {
+                val ok = runCatching { download(app) }.isSuccess
+                done(ok)
+            }.start()
         }
     }
 }

@@ -1,15 +1,21 @@
 # Snap Overlay
 
-An Android app for Marvel Snap:
+An Android overlay for Marvel Snap. The overlay is the whole app: tap the app icon and a round
+purple **S** button appears over the game. Tap the **S** to open the panel.
 
-- **Deck library.** Paste a deck code from the game (**Copy Deck Code**), give it a name, and it's saved.
-  Each deck shows its 12 cards with cost and power. **Copy code** puts it back on the clipboard so
-  you can import it in the game.
-- **Floating button.** A round **S** button floats over the game. Tap it to see the deck you're
-  playing; tap a card when you draw it to grey it out and see how many are left. Drag the button to
-  move it. Tap **Change** to switch decks.
+- **Folders.** The panel opens on your folders: **Ladder**, plus one per game mode that you add
+  with **New folder** (rename or delete them inside each folder; Ladder can't be deleted).
+- **+ (new deck).** Always at the top of the panel. Choose **Paste a deck code** (after **Copy Deck
+  Code** in the game) or **Pick cards** (search and tap 12 cards; the app makes the deck code).
+  Pick the deck's name and folder, then **Save deck**.
+- **Decks.** Each deck shows its win/loss record. Inside a deck: **Won** / **Lost** after each
+  match (with **Undo**), the 12 cards with cost and power (tap one when you draw it to grey it out),
+  **Reset cards**, **Copy code**, **Rename**, **Move** (to another folder) and **Delete**.
+- **Closing.** **Quit** at the top of the panel, or drag the **S** onto the **✕** that appears at
+  the bottom of the screen. **✕** in the panel just hides the panel.
+- **Card list** updates by itself each time the overlay starts.
 
-The app never reads or changes the game. You choose your deck yourself, and it only shows what you tap.
+The app never reads or changes the game. You record results with one tap.
 
 ## Install on your phone
 
@@ -17,16 +23,16 @@ The app never reads or changes the game. You choose your deck yourself, and it o
    right, or **⋯ → Releases** on mobile) and tap **SnapOverlay.apk** under **latest**.
 2. When it finishes downloading, tap it. If Android says installs from this source aren't allowed,
    tap **Settings**, turn on **Allow from this source**, then go back and tap **Install**.
-3. Open **Snap Overlay**. Tap **Turn on floating button**. The first time, Android opens
-   **Display over other apps**: turn **Snap Overlay** on, then press back.
+3. Open **Snap Overlay**. The first time, Android opens **Display over other apps**: turn
+   **Snap Overlay** on, then press back.
 
-To update, download and install the new **SnapOverlay.apk** the same way. Your saved decks stay.
+To update, download and install the new **SnapOverlay.apk** the same way. Your decks and records stay.
 
 ## Card details
 
 Card names, costs and power come from [marvelsnapzone.com](https://marvelsnapzone.com)'s card list.
-A copy is built into the app, refreshed each time GitHub builds it. **Update card list** in the app
-downloads the newest one. Card art is not included.
+A copy is built into the app, refreshed each time GitHub builds it, and the app downloads the newest one each
+time the overlay starts. Card art is not included.
 
 ## How it's built
 

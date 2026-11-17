@@ -5,12 +5,17 @@
   accepted in the cloud container). So the app is compiled and tested only on GitHub. After
   pushing, check the "Build app" workflow run and fix failures.
 - Bump `versionCode` and `versionName` in `app/build.gradle.kts` for each change sent to the owner.
-- The app must not read or touch the game. The player picks the deck; nothing is automatic.
+- The app must not read or touch the game. The player picks the deck and taps Won/Lost (owner
+  chose one-tap results over screen watching).
+- The overlay is the whole app (owner's request). `MainActivity` only asks for the overlay
+  permission and starts `OverlayService`; all screens live in `OverlayService` (a back stack of
+  `Screen`s). Opening from the app icon starts at the folders; tapping the S resumes where you were.
+- Data: `DeckStore` keeps folders (Ladder id 1 always present) and decks with wins/losses as one
+  JSON string in SharedPreferences; decks saved by 0.1.0 move into Ladder.
 - Deck code format (current): base64 of comma-separated short keys. Key = card id with lowercase
   a e i o u y removed + id length in hex ("Lancelot" -> "Lnclt8"). Old format: base64 JSON with
   "CardDefId". See `DeckCode.kt`; the owner's real decks are in `DeckCodeTest.kt`.
 - Card data: marvelsnapzone.com `getinfo/?searchtype=cards&searchcardstype=true` → `success.cards[]`
   with `carddefid`, `name`, `cost`, `power`, `status`. Slimmed into `app/src/main/assets/cards.json`.
-- Ideas not built yet: build a deck from scratch in the app (`DeckCode.encode` already exists),
-  automatic deck detection from the screen.
+- Ideas not built yet: automatic deck/result detection from the screen.
 - Keep `README.md` up to date when features change.

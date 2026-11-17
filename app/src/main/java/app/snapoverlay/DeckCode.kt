@@ -55,6 +55,19 @@ object DeckCode {
         return null
     }
 
+    /**
+     * The same kind of text the game copies: one "# (cost) Name" line per card, the code, and
+     * the game's note. Cheapest cards first.
+     */
+    fun gameText(cards: List<CardInfo>): String {
+        val sorted = cards.sortedWith(compareBy<CardInfo>({ it.cost }, { it.name }))
+        val sb = StringBuilder()
+        for (c in sorted) sb.append("# (").append(c.cost).append(") ").append(c.name).append('\n')
+        sb.append("#\n").append(encode(cards.map { it.id })).append("\n#\n")
+        sb.append("# To use this deck, copy it to your clipboard and paste it from the deck editing menu in MARVEL SNAP.")
+        return sb.toString()
+    }
+
     /** Builds a deck code from full card ids, in the same format the game uses today. */
     fun encode(cardIds: List<String>): String =
         Base64.getEncoder().encodeToString(cardIds.joinToString(",") { shortKey(it) }.toByteArray())
