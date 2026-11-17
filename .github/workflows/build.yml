@@ -7,6 +7,11 @@ on:
 permissions:
   contents: write
 
+# One build at a time, so two builds never publish the download at once.
+concurrency:
+  group: build-app
+  cancel-in-progress: false
+
 jobs:
   build:
     runs-on: ubuntu-latest
